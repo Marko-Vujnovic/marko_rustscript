@@ -2,15 +2,47 @@
 
 use rustscript::*;
 
-fn display_the_tui() {
+#[derive(Clone)]
+struct MenuFolder { name: String, description: String, children: Vec<MenuChild> }
+#[derive(Clone)]
+struct MenuButton { name: String, description: String, action: fn(app: &mut cursive::Cursive) -> () }
+
+trait HasAName { fn name(&self) -> &str; }
+trait HasADescription { fn description(&self) -> &str; }
+trait Clickable { fn on_click(&self, app: &mut cursive::Cursive) -> (); }
+
+#[derive(Clone)]
+enum MenuChild { A(MenuFolder), B(MenuButton) }
+impl HasAName for MenuChild { fn name(&self) -> &str {
+    match self {
+        MenuChild::A(folder) => &folder.name,
+        MenuChild::B(button) => &button.name,
+    }
+}}
+
+impl HasADescription for MenuChild { fn description(&self) -> &str {
+    match self {
+        MenuChild::A(folder) => &folder.description,
+        MenuChild::B(button) => &button.description,
+    }
+}}
+
+impl Clickable for MenuChild { fn on_click(&self, app: &mut cursive::Cursive) -> () {
+    match self {
+        MenuChild::A(folder) => { app.pop_layer(); app.add_layer(main_layout_wrap(to_tui_view(folder))); },
+        MenuChild::B(button) => (button.action)(app),
+    }
+}}
+
+fn display_the_tui(ui: &MenuFolder) {
     use cursive::traits::{Nameable, Boxable, Scrollable};
     use cursive::{ align::Align, };
 
     let mut app = cursive::default();
     let mut panes = cursive::views::LinearLayout::horizontal();
     let mut program_descr = cursive::views::LinearLayout::vertical();
-    let picker = main_menu();
-    panes.add_child(cursive::traits::Boxable::fixed_size(picker, (30, 25)));
+    let left_pane = to_tui_view(&ui);
+    panes.add_child(cursive::traits::Boxable::fixed_size(left_pane, (30, 25)));
     panes.add_child(cursive::views::DummyView);
     program_descr.add_child(cursive::views::TextView::new(r#"Welcome to Rustscript!"#).align(Align::top_center()));
     program_descr.add_child(cursive::views::DummyView);
@@ -24,8 +56,30 @@ fn display_the_tui() {
     app.run();
 }
 
+fn to_tui_view(menu: &MenuFolder) -> cursive::views::SelectView<MenuChild> {
+    let mut view: cursive::views::SelectView<MenuChild> = cursive::views::SelectView::new();
+    for entry in &menu.children { view.add_item(entry.name().clone(), (*entry).clone()); }
+    view
+        .on_select(|app: &mut cursive::Cursive, entry: &MenuChild| {
+            let mut status_bar = app.find_name::<cursive::views::TextView>("status").unwrap();
+            status_bar.set_content(entry.description());
+        })
+        .on_submit(|app: &mut cursive::Cursive, entry: &MenuChild| {
+            entry.on_click(app);
+        })
+}
+
 fn main() -> core::result::Result<(), std::io::Error> { tokio::runtime::Runtime::new().unwrap().block_on(async {
-    if std::env::args().len() == 1 { display_the_tui(); return Ok(()); }
+    let main_menu_ = MenuFolder{name: "Main menu".into(), description: "".into(), children: vec![
+        MenuChild::A(MenuFolder{name: "Run".to_string(), description: "Pick an .mpa file to run".into(), children: vec![] }),
+        MenuChild::A(MenuFolder{name: "Edit".into(), description: "Edit the script in a real IDE, with autocompletion, breakpoints, etc".into(), children: vec![
+            MenuChild::B(MenuButton{name: "neovim + lspclient".into(), action: |a| {}, description: "descr".into() }),
+            MenuChild::B(MenuButton{name: "vscode".into(), action: |a| { a.quit() }, description: "descr".into() }),
+            MenuChild::B(MenuButton{name: "Jetbrains Idea".into(), action: |a| {}, description: "descr".into() }),
+        ]}),
+    ]};
+
+    if std::env::args().len() == 1 { display_the_tui(&main_menu_); return Ok(()); }
     let (options, positional_args) = parse_args(std::env::args());
     let script_path = &positional_args[1];
     main_(&script_path).await?;
@@ -33,7 +87,7 @@ fn main() -> core::result::Result<(), std::io::Error> { tokio::runtime::Runtime:
     Ok(())
 })}
 
-fn file_picker<D>(directory: D) -> cursive::views::SelectView<std::fs::DirEntry> where D: AsRef<std::path::Path> {
+pub fn file_picker<D>(directory: D) -> cursive::views::SelectView<std::fs::DirEntry> where D: AsRef<std::path::Path> {
     let mut view = cursive::views::SelectView::new();
     for entry in std::fs::read_dir(directory).expect("Can't read the directory") {
         if let Ok(e) = entry {
@@ -71,37 +125,3 @@ fn main_layout_wrap<V: cursive::view::IntoBoxedView + 'static>(view: V) -> cursi
     cursive::views::Dialog::around(layout).button("Quit", |a| a.quit())
 }
 
-struct MenuEntry { name: String, action: fn(app: &mut cursive::Cursive) -> (), description: String }
-fn main_menu() -> cursive::views::SelectView<MenuEntry> {
-    let mut view = cursive::views::SelectView::new();
-    let entries = [
-        MenuEntry{name: "Run".to_string(), action: |a| { }, description: "Pick an .mpa file to run".into() },
-        MenuEntry{name: "Edit".into(), action: |a| { a.pop_layer(); a.add_layer(main_layout_wrap(edit_menu())); }, description: "Edit the script in a real IDE, with autocompletion, breakpoints, etc".into() },
-        // MenuEntry{name: "Quit".into(), action: |a| a.quit() },
-    ];
-    for entry in entries { view.add_item(entry.name.clone(), entry); }
-    view.on_select(menu_item_highlighted).on_submit(menu_item_chosen)
-}
-
-fn edit_menu() -> cursive::views::SelectView<MenuEntry>
-{
-    let mut view = cursive::views::SelectView::new();
-    let entries = [
-        MenuEntry{name: "neovim + lspclient".into(), action: |a| {}, description: "descr".into() },
-        MenuEntry{name: "vscode".into(), action: |a| {}, description: "descr".into() },
-        MenuEntry{name: "Jetbrains Idea".into(), action: |a| {}, description: "descr".into() },
-    ];
-    for entry in entries {
-        view.add_item(entry.name.clone(), entry);
-    }
-    view.on_select(menu_item_highlighted).on_submit(menu_item_chosen)
-}
-
-fn menu_item_chosen(app: &mut cursive::Cursive, entry: &MenuEntry) {
-    (entry.action)(app);
-}
-
-fn menu_item_highlighted(app: &mut cursive::Cursive, entry: &MenuEntry) {
-    let mut status_bar = app.find_name::<cursive::views::TextView>("status").unwrap();
-    status_bar.set_content(&entry.description);
-}

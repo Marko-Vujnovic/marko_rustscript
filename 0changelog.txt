@@ -6,3 +6,5 @@ Download rustc and cargo if they're not installed
 Download rustc and cargo if they're installed but are too old to compile the script in question
 Short form cargo.toml deps
 TUI: main menu, edit menu
+
+UI tree without anything Cursive-specific (display the same tree in a GUI in the future)

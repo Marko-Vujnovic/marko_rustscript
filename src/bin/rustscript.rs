@@ -93,8 +93,9 @@ fn main() -> core::result::Result<(), std::io::Error> {
         }), a); } }),
         EMenuChild::B(MenuButton{name: "Edit".into(), description: "Edit the script in a real IDE, with autocompletion, breakpoints, etc".into(), action: |a| {
             await_ui(file_picker(".", |file_or_folder: &std::path::Path, a| {
-            await_ui(ide_picker(|ide: &IDE, a: &mut cursive::Cursive, file_or_folder: &std::path::Path| {
+            await_ui(ide_picker(|ide: &IDE, a, file_or_folder| {
             await_blocking(edit_(&file_or_folder, &ide)).unwrap();
+            // marko_plaintext_archive::pack2(&file_or_folder, cwd()).unwrap();
         }, file_or_folder), a); }), a); }}),
     ]};
 

@@ -76,8 +76,27 @@ trait TOpenable { fn open(&self, project_folder: &std::path::Path) -> Option<boo
 pub struct VSCode {}
 impl TOpenable for VSCode {fn open(&self, project_folder: &std::path::Path) -> Option<bool> { let cmd_proc = std::process::Command::new("code").args(&[project_folder.to_str()?]).stdout(std::process::Stdio::inherit()).spawn().ok()?; cmd_proc.wait_with_output().ok()?; Some(true) }}
 
+fn new_process<F: FnOnce() -> i32>(f: F) -> nix::Result<nix::unistd::Pid> {
+    unsafe {
+        match nix::unistd::fork()? {
+            nix::unistd::ForkResult::Parent { child } => {
+                nix::sys::wait::waitpid(Some(child), None)?; // waitpid() in order to prevent it from becoming a zombie
+                Ok(child)
+            }
+    
+            nix::unistd::ForkResult::Child => {
+                let exit_code = f();
+                std::process::exit(exit_code);
+            }
+        }
+    }
+}
+
 pub struct Vim {}
-impl TOpenable for Vim {fn open(&self, project_folder: &std::path::Path) -> Option<bool> { let cmd_proc = std::process::Command::new("xterm").args(&["-e", "/bin/bash", "-c", &format!("cd {}; nvim {}", project_folder.to_str()?, ".")]).stdout(std::process::Stdio::inherit()).spawn().ok()?; cmd_proc.wait_with_output().ok()?; Some(true) }}
+impl TOpenable for Vim {fn open(&self, project_folder: &std::path::Path) -> Option<bool> { 
+    new_process(|| { std::process::Command::new("xterm").args(&["-e", "/bin/bash", "-c", &format!("cd {}; nvim {}", project_folder.to_str().unwrap(), ".")]).spawn().expect("Failed to spawn"); 0}).ok()?;
+    Some(true) 
+}}
 
 pub enum IDE { VSCode_(VSCode), Vim_(Vim) }
 impl TOpenable for IDE {fn open(&self, project_folder: &std::path::Path) -> Option<bool> {

@@ -9,10 +9,14 @@ description="Use rust for writing scripts, instead of writing Python or shell sc
 license="GNU AGPLv3"
 repository="https://github.com/Marko-Vujnovic/rustscript"
 
+[net]
+retry = 2
+git-fetch-with-cli = true # use the CLI git executable to clone (uses your .ssh/ keys)
+
 [dependencies]
 tokio = { features = ["full"], version = "1.17.0" }
 libc = "0.2.121"
-#nix = "0.23.1"
+nix = "0.23.1"
 #nix-extra = { git = "ssh://git@github.com/dubiousjim/nix-extra", rev = "0612a392df780a36d4773d2159ee932550e2a6e1" }
 async-process = "1.3.0"
 futures-util = "0.3.21"
@@ -21,18 +25,8 @@ serde_json = "1.0"
 terminal-menu = "2.0.2"
 # marko_fs_types = { path = "./libs/marko_fs_types" }
 # marko_fs_types = { git = "https://github.com/Marko-Vujnovic/marko_fs_types", rev = "c0ccd3c" }
-marko_plaintext_archive = { git = "ssh://git@github.com/Marko-Vujnovic/marko_plaintext_archive_lib", rev = "b221d237e2d70d4bf413d96a9483c23abc3156a9" }
+marko_plaintext_archive = { git = "ssh://git@github.com/Marko-Vujnovic/marko_plaintext_archive_lib", rev = "a3f7ccd8b7a71ed725e60ac91bf787f81845381a" }
 envie = { git = "ssh://git@github.com/Marko-Vujnovic/marko_envie", rev = "589dd3fe44f56bb046a35797ccd66e7c281f1d84" }
 reqwest = { features = ["stream"], version = "0.11" }
-
-# crossterm = "0.17.7" # Considered:
-# cursive = "0.15.2"
 cursive = "0.16.3"
-    # DQ-ed:
-        # Too low level:
-            # crossterm
-            # termion doesn't work on Windows, crossterm does
-            # rustbox
-    # cursive (backend: crossterm) also works on Windows. Retained mode
-    # tui-rs (backend: crossterm) might work on Windows. Immediate mode :(
-    # zl also works on Windows. Retained mode
+# fork = "0.1"

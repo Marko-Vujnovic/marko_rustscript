@@ -2,5 +2,4 @@ Add clippy: ban unwrap() and expect()
 README: advantages over bash and python
 rustscript run
 rustscript new
-rustscript edit, w/ a menu to pick the IDE
 "nixpkgs_ToUseRustFrom.rustc" -> Package{ name: "rustc", repo: RepoState{url: url, hash: "___" }, }

@@ -1,3 +1,5 @@
+# cargo-features = ["edition2018"]
+
 [package]
 name = "rustscript"
 version = "0.2.0"
@@ -23,3 +25,14 @@ marko_plaintext_archive = { git = "ssh://git@github.com/Marko-Vujnovic/marko_pla
 envie = { git = "ssh://git@github.com/Marko-Vujnovic/marko_envie", rev = "589dd3fe44f56bb046a35797ccd66e7c281f1d84" }
 reqwest = { features = ["stream"], version = "0.11" }
 
+# crossterm = "0.17.7" # Considered:
+# cursive = "0.15.2"
+cursive = "0.16.3"
+    # DQ-ed:
+        # Too low level:
+            # crossterm
+            # termion doesn't work on Windows, crossterm does
+            # rustbox
+    # cursive (backend: crossterm) also works on Windows. Retained mode
+    # tui-rs (backend: crossterm) might work on Windows. Immediate mode :(
+    # zl also works on Windows. Retained mode

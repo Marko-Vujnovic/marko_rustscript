@@ -1,1 +1,2 @@
 Can now execute an .mpa file: rustscript ./example.mpa
+Run the existing executable if it's not stale

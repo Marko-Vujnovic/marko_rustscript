@@ -1,21 +1,30 @@
 pub mod common_dirs; pub use common_dirs::*;
 pub mod project; pub use project::*;
 
+fn is_newer_than<P: AsRef<std::path::Path>>(l: P, r: &std::path::Path) -> core::result::Result<bool, std::io::Error> {
+    Ok(std::fs::metadata(l)?.modified()? > std::fs::metadata(r)?.modified()?)
+}
+
 pub async fn main_(script_path: &str) -> core::result::Result<(), std::io::Error> {
-    // println!("{}", script_path);
-    println_!(script_path);
+    let script_p: std::path::PathBuf = script_path.into(); let script_p = std::fs::canonicalize(script_p)?;
+    let script_name: String = script_p.file_stem().unwrap().to_string_lossy().to_string();
+    let scriptProject = Project{ name: script_name };
+
+    if !script_p.exists() { panic!("No such file: {:?}", &script_path); }
 
     marko_plaintext_archive::unpack2(&script_path, &get_the_script_projects_folder());
 
-    let scriptProject = Project{ name: "example".to_string() };
-    std::env::set_current_dir(&project_get_the_script_folder(&scriptProject))?;
+    let script_project_folder = get_the_script_projects_folder().join(&scriptProject.name);
+    std::env::set_current_dir(&script_project_folder)?;
     std::env::set_var("CARGO_NET_GIT_FETCH_WITH_CLI", "true");
     let bf = project_get_the_scripts_build_folder(&scriptProject);
-    let out = async_process::Command::new("cargo").arg("build").arg("--release").arg("--target-dir").arg(&bf).output().await?;
-    println!("cargo: {}", std::str::from_utf8(&out.stdout).unwrap());
-    println!("cargo: {}", std::str::from_utf8(&out.stderr).unwrap());
-
     let name = &scriptProject.name; let exe = bf.join(format!("release/{name}"));
+    let no_need_to_build = exe.exists() && is_newer_than(&exe, &script_p)?;
+    if no_need_to_build == false {
+        let out = async_process::Command::new("cargo").arg("build").arg("--release").arg("--target-dir").arg(&bf).output().await?;
+        println!("cargo: {}", std::str::from_utf8(&out.stdout).unwrap());
+        println!("cargo: {}", std::str::from_utf8(&out.stderr).unwrap());
+    }
 
     let out = async_process::Command::new(&exe).output().await?; println!("{}", std::str::from_utf8(&out.stdout).unwrap());
     Ok(())

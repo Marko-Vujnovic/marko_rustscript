@@ -1,0 +1,1 @@
+Can now execute an .mpa file: rustscript ./example.mpa

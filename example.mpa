@@ -1,0 +1,25 @@
+---
+name: example
+files:
+  - name: Cargo.toml
+    contents: |
+      [package]
+      authors = ["Marko Vujnovic"]
+      edition = "2018"
+      name = "example"
+      version = "0.1.0"
+
+      [[bin]]
+      name = "example"
+      path = "main.rs"
+
+      [dependencies]
+      reqwest = { version = "0.11", features = ["stream"] }
+      tokio = { version = "1.17.0", features = ["full"] }
+  - name: main.rs
+    contents: |
+      fn main() -> Result<(), std::io::Error> { tokio::runtime::Runtime::new().unwrap().block_on(async {
+          println!("Hi {}", "there");
+
+      Ok(()) })}
+subfolders: []

@@ -1,0 +1,1 @@
+With the help of this program, you can now use rust as a scripting language, instead of writing Python or shell scripts.

@@ -92,10 +92,23 @@ fn new_process<F: FnOnce() -> i32>(f: F) -> nix::Result<nix::unistd::Pid> {
     }
 }
 
+pub enum Message { ProcessExited }
+
 pub struct Vim {}
-impl TOpenable for Vim {fn open(&self, project_folder: &std::path::Path) -> Option<bool> { 
-    new_process(|| { std::process::Command::new("xterm").args(&["-e", "/bin/bash", "-c", &format!("cd {}; nvim {}", project_folder.to_str().unwrap(), ".")]).spawn().expect("Failed to spawn"); 0}).ok()?;
-    Some(true) 
+impl TOpenable for Vim {fn open(&self, project_folder: &std::path::Path) -> Option<bool> {
+    let (mut sender, mut receiver) = std::sync::mpsc::channel::<Message>();
+    
+    let pid = new_process(|| { 
+        let mut cmd = std::process::Command::new("xterm"); cmd.args(&["-e", "/bin/bash", "-c", &format!("cd {}; nvim {}", project_folder.to_str().unwrap(), ".")]);
+        let mut child = cmd.spawn().unwrap();
+        // cmd.output().unwrap();
+
+        // child.wait_with_output().unwrap();
+        // child.wait().unwrap();
+        sender.send(Message::ProcessExited).unwrap();
+        0
+    }).ok()?;
+    Some(true)
 }}
 
 pub enum IDE { VSCode_(VSCode), Vim_(Vim) }

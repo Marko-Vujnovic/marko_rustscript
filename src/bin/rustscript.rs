@@ -53,10 +53,23 @@ fn display_the_tui(ui: &MenuFolder) {
         .fixed_size((50, 25)));
     panes.add_child(program_descr);
     app.add_layer(main_layout_wrap(panes));
-    
-    app.run();
-    // while app.is_running() { app.step(); }
-    // app.set_on_post_event(trigger, cb)
+
+    let mut runner = app.into_runner();
+    runner.post_events(true); // Solves: black screen before input. runner.step() DNW
+
+    let receivers: Vec<std::sync::mpsc::Receiver<Message>> = vec![];
+    while runner.is_running() {
+        // runner.step();
+        let received_something = runner.process_events();
+        for receiver in &receivers {
+            if let Ok(message) = receiver.try_recv() {
+                match message {
+                    Message::ProcessExited => {},
+                }
+            }
+        }
+        runner.post_events(received_something);
+    }
 }
 
 fn to_tui_view(menu: &MenuFolder) -> cursive::views::SelectView<EMenuChild> {

@@ -11,4 +11,5 @@ UI tree without anything Cursive-specific (display the same tree in a GUI in the
 
 TUI: Made a file picker. main_menu->run now works
 Can now open the project in locally-installed IDEs (vscode, nvim): main_menu->edit(.mpa file_picker())->ide_picker()
-Neovim no longer blocks the rustcript's UI: new_process(||{  })
+Neovim no longer blocks rustcript's UI: new_process(||{  })
+Take control over the main loop, manually stepping Cursive now

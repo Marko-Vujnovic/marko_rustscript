@@ -19,7 +19,7 @@ files:
   - name: main.rs
     contents: |
       fn main() -> Result<(), std::io::Error> { tokio::runtime::Runtime::new().unwrap().block_on(async {
-          println!("Hi {}", "there");
+          let name = "Marko"; println!("Hi there {name}");
 
-      Ok(()) })}
-subfolders: []
+      Ok(()) })} 
+subfolders: []  

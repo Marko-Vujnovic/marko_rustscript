@@ -1,6 +1,5 @@
 target/
 Cargo.lock
-_*
+**/_*
 
 .idea/
-backup/

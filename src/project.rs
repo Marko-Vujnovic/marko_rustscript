@@ -1,4 +1,4 @@
-use crate as rustscript; use rustscript::*;
+use crate as rustscript; use self::rustscript::*;
 
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct Project { pub name:String }

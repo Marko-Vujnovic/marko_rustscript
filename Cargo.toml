@@ -18,6 +18,7 @@ terminal-menu = "2.0.2"
 # marko_fs_types = { path = "./libs/marko_fs_types" }
 # marko_fs_types = { git = "https://github.com/Marko-Vujnovic/marko_fs_types", rev = "c0ccd3c" }
 marko_plaintext_archive = { git = "ssh://git@github.com/Marko-Vujnovic/marko_plaintext_archive_lib", rev = "b221d237e2d70d4bf413d96a9483c23abc3156a9" }
+envie = { git = "ssh://git@github.com/Marko-Vujnovic/marko_envie", rev = "589dd3fe44f56bb046a35797ccd66e7c281f1d84" }
 
 [dependencies.reqwest]
 features = ["stream"]

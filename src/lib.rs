@@ -71,7 +71,7 @@ pub async fn cargo_build(script_project_folder: &std::path::Path) -> core::resul
     Ok(())
 }
 
-pub async fn main_(script_path: &str) -> core::result::Result<(), std::io::Error> {
+pub async fn main_(script_path: &str, tui_is_occupying_stdout: bool) -> core::result::Result<(), std::io::Error> {
     unsafe{ envie::SANDBOX_TO_USE = envie::SandboxRuntime::Proot; }
     let script_p: std::path::PathBuf = script_path.into(); let script_p = std::fs::canonicalize(script_p)?;
     let script_name: String = script_p.file_stem().unwrap().to_string_lossy().to_string();
@@ -93,7 +93,12 @@ pub async fn main_(script_path: &str) -> core::result::Result<(), std::io::Error
     cargo_build(&script_project_folder).await?;
     // println!("exe: {:?}", &exe);
     // println!("exe unquoted: {}", exe.to_string_lossy());
-    let cmd_proc = std::process::Command::new(&exe).stdout(std::process::Stdio::inherit()).spawn()?; cmd_proc.wait_with_output()?;
+    if !tui_is_occupying_stdout {
+        let cmd_proc = std::process::Command::new(&exe).stdout(std::process::Stdio::inherit()).spawn()?; cmd_proc.wait_with_output()?;
+    }
+    else {
+        let cmd_proc = std::process::Command::new("xterm").args(&["-e", "/bin/bash", "-i", "-c", &format!("{};{}", exe.to_str().unwrap(), "sleep 5")]).stdout(std::process::Stdio::inherit()).spawn()?; cmd_proc.wait_with_output()?;
+    }
     Ok(())
 }
 

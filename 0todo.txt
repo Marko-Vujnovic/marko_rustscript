@@ -3,3 +3,8 @@ README: advantages over bash and python
 rustscript run
 rustscript new
 "nixpkgs_ToUseRustFrom.rustc" -> Package{ name: "rustc", repo: RepoState{url: url, hash: "___" }, }
+TUI: back button
+TUI: file picker: .. button
+TUI: file picker: enter folders
+TUI: find the avail term emulator
+TUI: remove sleep 5

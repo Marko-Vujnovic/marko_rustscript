@@ -8,3 +8,5 @@ Short form cargo.toml deps
 TUI: main menu, edit menu
 
 UI tree without anything Cursive-specific (display the same tree in a GUI in the future)
+
+TUI: Made a file picker. main_menu->run now works

@@ -71,6 +71,29 @@ pub async fn cargo_build(script_project_folder: &std::path::Path) -> core::resul
     Ok(())
 }
 
+trait TOpenable { fn open(&self, project_folder: &std::path::Path) -> Option<bool>; }
+
+pub struct VSCode {}
+impl TOpenable for VSCode {fn open(&self, project_folder: &std::path::Path) -> Option<bool> { let cmd_proc = std::process::Command::new("code").args(&[project_folder.to_str()?]).stdout(std::process::Stdio::inherit()).spawn().ok()?; cmd_proc.wait_with_output().ok()?; Some(true) }}
+
+pub struct Vim {}
+impl TOpenable for Vim {fn open(&self, project_folder: &std::path::Path) -> Option<bool> { let cmd_proc = std::process::Command::new("xterm").args(&["-e", "/bin/bash", "-c", &format!("cd {}; nvim {}", project_folder.to_str()?, ".")]).stdout(std::process::Stdio::inherit()).spawn().ok()?; cmd_proc.wait_with_output().ok()?; Some(true) }}
+
+pub enum IDE { VSCode_(VSCode), Vim_(Vim) }
+impl TOpenable for IDE {fn open(&self, project_folder: &std::path::Path) -> Option<bool> {
+    match &self {
+        IDE::VSCode_(o) => o.open(project_folder),
+        IDE::Vim_(o) => o.open(project_folder),
+    }
+}}
+
+pub async fn edit_(script_path: &std::path::Path, in_ide: &IDE) -> core::result::Result<(), std::io::Error> {
+    let script_name: String = script_path.file_stem().unwrap().to_string_lossy().to_string();
+    let script_project_folder = get_the_script_projects_folder().join(&script_name);
+    in_ide.open(&script_project_folder);
+    Ok(())
+}
+
 pub async fn main_(script_path: &str, tui_is_occupying_stdout: bool) -> core::result::Result<(), std::io::Error> {
     unsafe{ envie::SANDBOX_TO_USE = envie::SandboxRuntime::Proot; }
     let script_p: std::path::PathBuf = script_path.into(); let script_p = std::fs::canonicalize(script_p)?;

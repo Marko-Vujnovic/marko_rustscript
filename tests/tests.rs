@@ -5,7 +5,7 @@ use rustscript::*;
 #[test]
 fn run_main_with_args_t() -> core::result::Result<(), std::io::Error> { tokio::runtime::Runtime::new().unwrap().block_on(async {
     let script_path = "./example.mpa";
-    main_(&script_path).await?;
+    main_(&script_path, false).await?;
     Ok(())
 })}
 

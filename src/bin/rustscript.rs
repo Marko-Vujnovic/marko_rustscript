@@ -3,16 +3,16 @@
 use rustscript::*;
 
 #[derive(Clone)]
-struct MenuFolder { name: String, description: String, children: Vec<EMenuChild> }
+pub struct MenuFolder { name: String, description: String, children: Vec<EMenuChild> }
 #[derive(Clone)]
-struct MenuButton { name: String, description: String, action: fn(app: &mut cursive::Cursive) -> () }
+pub struct MenuButton { name: String, description: String, action: fn(app: &mut cursive::Cursive) -> () }
 
 trait HasAName { fn name(&self) -> &str; }
 trait HasADescription { fn description(&self) -> &str; }
 trait Clickable { fn on_click(&self, app: &mut cursive::Cursive) -> (); }
 
 #[derive(Clone)]
-enum EMenuChild { A(MenuFolder), B(MenuButton) }
+pub enum EMenuChild { A(MenuFolder), B(MenuButton) }
 impl HasAName for EMenuChild { fn name(&self) -> &str {
     match self {
         EMenuChild::A(folder) => &folder.name,
@@ -72,7 +72,7 @@ fn to_tui_view(menu: &MenuFolder) -> cursive::views::SelectView<EMenuChild> {
         })
 }
 
-fn switch_screen<V: cursive::view::IntoBoxedView + 'static>(a: &mut cursive::Cursive, view: V) {
+fn await_ui<V: cursive::view::IntoBoxedView + 'static>(view: V, a: &mut cursive::Cursive,) {
     a.pop_layer();
     a.add_layer(main_layout_wrap(view));
 }
@@ -83,21 +83,19 @@ fn await_blocking<F: core::future::Future>(future: F) -> F::Output {
 }
 
 fn main() -> core::result::Result<(), std::io::Error> {
-    
+
     let main_menu_ = MenuFolder{name: "Main menu".into(), description: "".into(), children: vec![
         EMenuChild::B(MenuButton{name: "Run".to_string(), description: "Pick an .mpa file to run".into(), action: |a| {
             // let file_or_folder = file_picker(a, ".").await;
-            switch_screen(a, file_picker(".", |a, file_or_folder: &std::path::Path| {
-                await_blocking(main_(file_or_folder.to_str().unwrap(), true)).unwrap();
-                a.quit();
-                // switch_screen(a, run_func_arguments_screen);
-            }));
-        } }),
-        EMenuChild::A(MenuFolder{name: "Edit".into(), description: "Edit the script in a real IDE, with autocompletion, breakpoints, etc".into(), children: vec![
-            EMenuChild::B(MenuButton{name: "neovim + lspclient".into(), action: |a| {}, description: "descr".into() }),
-            EMenuChild::B(MenuButton{name: "vscode".into(), action: |a| { a.quit() }, description: "descr".into() }),
-            EMenuChild::B(MenuButton{name: "Jetbrains Idea".into(), action: |a| {}, description: "descr".into() }),
-        ]}),
+            await_ui(file_picker(".", |file_or_folder: &std::path::Path, a| {
+            await_blocking(main_(file_or_folder.to_str().unwrap(), true)).unwrap();
+            a.quit();
+        }), a); } }),
+        EMenuChild::B(MenuButton{name: "Edit".into(), description: "Edit the script in a real IDE, with autocompletion, breakpoints, etc".into(), action: |a| {
+            await_ui(file_picker(".", |file_or_folder: &std::path::Path, a| {
+            await_ui(ide_picker(|ide: &IDE, a: &mut cursive::Cursive, file_or_folder: &std::path::Path| {
+            await_blocking(edit_(&file_or_folder, &ide)).unwrap();
+        }, file_or_folder), a); }), a); }}),
     ]};
 
     if std::env::args().len() == 1 { display_the_tui(&main_menu_); return Ok(()); }
@@ -107,30 +105,52 @@ fn main() -> core::result::Result<(), std::io::Error> {
 }
 
 // pub async fn file_picker<D: AsRef<std::path::Path>>(app: &mut cursive::Cursive, directory: D) -> core::result::Result<bool, std::io::Error> {
-pub fn file_picker<D, F: 'static + Fn(&mut cursive::Cursive, &std::path::Path) -> ()>(directory: D, on_picked: F) -> cursive::views::SelectView<std::fs::DirEntry> where D: AsRef<std::path::Path> {
-        let mut view = cursive::views::SelectView::new();
-        for entry in std::fs::read_dir(directory).expect("Can't read the directory") {
-            if let Ok(e) = entry {
-                let file_name = e.file_name().into_string().unwrap();
-                view.add_item(file_name, e);
-            }
+pub fn file_picker<D, F: 'static + Fn(&std::path::Path, &mut cursive::Cursive) -> ()>(directory: D, on_picked: F) -> cursive::views::SelectView<std::fs::DirEntry> where D: AsRef<std::path::Path> {
+    let mut view = cursive::views::SelectView::new();
+    for entry in std::fs::read_dir(directory).expect("Can't read the directory") {
+        if let Ok(e) = entry {
+            let file_name = e.file_name().into_string().unwrap();
+            view.add_item(file_name, e);
         }
-        view
-        .on_select(|app: &mut cursive::Cursive, entry: &std::fs::DirEntry| {
-            let mut status_bar = app.find_name::<cursive::views::TextView>("status").unwrap();
-            let file_name = entry.file_name().into_string().unwrap();
-            let file_size = entry.metadata().unwrap().len();
-            let content = format!("{}: {} bytes", file_name, file_size);
-            status_bar.set_content(content);
-        })
-        .on_submit(move |app: &mut cursive::Cursive, entry: &std::fs::DirEntry| {
-            if entry.metadata().unwrap().is_dir() {
-                // list folder's files
-            } else {
-                on_picked(app, &entry.path());
-            };
-        })
     }
+    view
+    .on_select(|app: &mut cursive::Cursive, entry: &std::fs::DirEntry| {
+        let mut status_bar = app.find_name::<cursive::views::TextView>("status").unwrap();
+        let file_name = entry.file_name().into_string().unwrap();
+        let file_size = entry.metadata().unwrap().len();
+        let content = format!("{}: {} bytes", file_name, file_size);
+        status_bar.set_content(content);
+    })
+    .on_submit(move |app: &mut cursive::Cursive, entry: &std::fs::DirEntry| {
+        if entry.metadata().unwrap().is_dir() {
+            // list folder's files
+        } else {
+            on_picked(&entry.path(), app);
+        };
+    })
+}
+
+pub fn ide_picker<F: 'static + Clone + Fn(&IDE, &mut cursive::Cursive, &std::path::Path) -> ()>(on_picked: F, captured: &std::path::Path) -> cursive::views::SelectView<(EMenuChild, std::path::PathBuf, F)> {
+    let ides = vec![
+        // EMenuChild::B(MenuButton{name: "neovim + lspclient".into(), action: |a| {}, description: "descr".into() }),
+        EMenuChild::B(MenuButton{name: "Your local vscode".into(), action: |a| {}, description: "descr".into() }),
+        EMenuChild::B(MenuButton{name: "Your local neovim".into(), action: |a| {}, description: "descr".into() }),
+        // EMenuChild::B(MenuButton{name: "Marko's vscode".into(), action: |a| {}, description: "descr".into() }),
+        // EMenuChild::B(MenuButton{name: "Jetbrains Idea".into(), action: |a| {}, description: "descr".into() }),
+    ];
+
+    let mut view = cursive::views::SelectView::new();
+    for ide in &ides {
+        let label = ide.name();
+        let obj_to_store = (ide.clone(), captured.to_path_buf(), on_picked.clone());
+        view.add_item(label, obj_to_store);
+    }
+    view
+    .on_submit(|a, stored_obj| { 
+        if stored_obj.0.name() == "Your local vscode" { (stored_obj.2)(&IDE::VSCode_(VSCode{}), a, &stored_obj.1); }
+        else if stored_obj.0.name() == "Your local neovim" { (stored_obj.2)(&IDE::Vim_(Vim{}), a, &stored_obj.1); }
+    })
+}
 
 fn main_layout_wrap<V: cursive::view::IntoBoxedView + 'static>(view: V) -> cursive::views::Dialog {
     use cursive::traits::{Nameable, Boxable, Scrollable};

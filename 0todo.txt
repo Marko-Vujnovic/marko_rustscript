@@ -1,3 +1,5 @@
+Overwrite the .mpa file when an IDE gets closed down
+Overwrite the .mpa file whenever (FS watch) the project is changed using an IDE
 Add clippy: ban unwrap() and expect()
 README: advantages over bash and python
 rustscript run

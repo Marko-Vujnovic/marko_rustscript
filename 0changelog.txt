@@ -4,3 +4,4 @@ Only unpack if the folder is stale or nonexistent
 
 Download rustc and cargo if they're not installed
 Download rustc and cargo if they're installed but are too old to compile the script in question
+Short form cargo.toml deps

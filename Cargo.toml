@@ -8,28 +8,18 @@ license="GNU AGPLv3"
 repository="https://github.com/Marko-Vujnovic/rustscript"
 
 [dependencies]
+tokio = { features = ["full"], version = "1.17.0" }
 libc = "0.2.121"
 #nix = "0.23.1"
 #nix-extra = { git = "ssh://git@github.com/dubiousjim/nix-extra", rev = "0612a392df780a36d4773d2159ee932550e2a6e1" }
 async-process = "1.3.0"
 futures-util = "0.3.21"
+serde = { features = ["derive"], version = "1" }
 serde_json = "1.0"
 terminal-menu = "2.0.2"
 # marko_fs_types = { path = "./libs/marko_fs_types" }
 # marko_fs_types = { git = "https://github.com/Marko-Vujnovic/marko_fs_types", rev = "c0ccd3c" }
 marko_plaintext_archive = { git = "ssh://git@github.com/Marko-Vujnovic/marko_plaintext_archive_lib", rev = "b221d237e2d70d4bf413d96a9483c23abc3156a9" }
 envie = { git = "ssh://git@github.com/Marko-Vujnovic/marko_envie", rev = "589dd3fe44f56bb046a35797ccd66e7c281f1d84" }
-
-[dependencies.reqwest]
-features = ["stream"]
-version = "0.11"
-
-[dependencies.serde]
-features = ["derive"]
-version = "1"
-
-[dependencies.tokio]
-features = ["full"]
-version = "1.17.0"
-
+reqwest = { features = ["stream"], version = "0.11" }
 
